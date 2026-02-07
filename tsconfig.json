@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "app/wellness/anxiety-checkin"  ],
   "exclude": ["node_modules"]
 }
