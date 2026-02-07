@@ -1,118 +1,275 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import React, { useMemo, useState } from "react";
 
-function todayISO() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
+/* ---------- PROMPTS ---------- */
+const PROMPTS = [
+  "Find one small detail in nature you’d normally miss. Describe it in 2 sentences.",
+  "What did you notice about the sky today (color, movement, feeling)?",
+  "Write a 3-line “weather report” for your mood.",
+  "Name one place on campus that feels calm. What makes it feel that way?",
+  "List 5 sounds you hear right now. Which one feels most comforting?",
+  "If nature could text you today, what would it say?",
+  "Describe a tree like it’s a character in a story.",
+  "Write one sentence starting with: “Even though things feel heavy…”",
+];
 
-const LS_PREFIX = "uofa_gratitude_v1_";
+/* ---------- CONSTANTS ---------- */
+const YT_RESET = "https://www.youtube-nocookie.com/embed/cCcZSeBJhUA";
+const YT_TED = "https://www.youtube-nocookie.com/embed/pBq31tsG2X4";
+const PDF_URL =
+  "https://eopcn.ca/wp-content/uploads/2026/01/Managing-Eco_Anxiety-2026.pdf";
+const FOLIO_URL =
+  "https://www.ualberta.ca/en/folio/2024/07/the-hidden-toll-of-climate-change.html";
+const YOGA_URL =
+  "https://www.ualberta.ca/en/campus-community-recreation/special-events/unwind-your-mind.html";
+const REPAIR_URL =
+  "https://sites.google.com/ualberta.ca/hecolrepaircafe/resources?authuser=0";
 
-export default function GratitudePage() {
-  const [dateISO, setDateISO] = useState(todayISO());
-  const [l1, setL1] = useState("");
-  const [l2, setL2] = useState("");
-  const [l3, setL3] = useState("");
-  const [saved, setSaved] = useState(false);
+/* ---------- PAGE ---------- */
+export default function WellnessPage() {
+  // Pick prompt once per page load (stable for the session)
+  const prompt = useMemo(
+    () => PROMPTS[Math.floor(Math.random() * PROMPTS.length)],
+    []
+  );
 
-  useEffect(() => {
-    const raw = localStorage.getItem(LS_PREFIX + dateISO);
-    if (!raw) {
-      setL1(""); setL2(""); setL3("");
-      return;
-    }
-    try {
-      const v = JSON.parse(raw);
-      setL1(v.l1 ?? "");
-      setL2(v.l2 ?? "");
-      setL3(v.l3 ?? "");
-    } catch {
-      setL1(""); setL2(""); setL3("");
-    }
-  }, [dateISO]);
-
-  const save = () => {
-    localStorage.setItem(
-      LS_PREFIX + dateISO,
-      JSON.stringify({ l1, l2, l3, savedAt: Date.now() })
-    );
-    setSaved(true);
-    setTimeout(() => setSaved(false), 900);
-  };
+  const [note, setNote] = useState("");
 
   return (
-    <div style={{ minHeight: "100vh", padding: 18 }}>
-      <div style={{ maxWidth: 780, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 28, fontWeight: 900 }}>🙏 Gratitude Journaling</h1>
-        <p style={{ opacity: 0.75, marginTop: 6 }}>
-          Three simple lines. Saved on your device.
+    <div style={page()}>
+      <div style={paper()}>
+        <h1 style={title()}>🌿 Climate Wellness Notebook</h1>
+        <p style={subtitle()}>
+          A calm space for climate emotions — reflection, grounding, and gentle
+          action.
         </p>
 
-        <div style={{ marginTop: 14 }}>
-          <label style={{ fontWeight: 800, fontSize: 13, opacity: 0.75 }}>
-            Date
-            <input
-              type="date"
-              value={dateISO}
-              onChange={(e) => setDateISO(e.target.value)}
+        {/* VIDEOS */}
+        <section style={section()}>
+          <h2 style={sectionTitle()}>📺 Gentle reset</h2>
+          <iframe
+            style={video()}
+            src={YT_RESET}
+            title="Gentle reset video"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </section>
+
+        <section style={section()}>
+          <h2 style={sectionTitle()}>🎤 Eco-anxiety → optimism</h2>
+          <iframe
+            style={video()}
+            src={YT_TED}
+            title="Eco-anxiety to optimism TED talk"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </section>
+
+        {/* PROMPT */}
+        <section style={sticky()}>
+          <h2 style={sectionTitle()}>✨ Reflection prompt</h2>
+          <p style={{ lineHeight: 1.6, margin: 0 }}>{prompt}</p>
+        </section>
+
+        {/* NOTE */}
+        <section style={section()}>
+          <h2 style={sectionTitle()}>📝 Write here</h2>
+          <textarea
+            style={textarea()}
+            placeholder="A few lines is enough…"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8 }}>
+            Tip: this note isn’t saved yet. If you want, I can add “Save locally”
+            like your other pages.
+          </div>
+        </section>
+
+        {/* LINKS */}
+        <section style={section()}>
+          <h2 style={sectionTitle()}>🧠 Resources</h2>
+
+          <Resource
+            href="/wellness/anxiety-checkin"
+            emoji="🧠"
+            text="Eco-anxiety check-in"
+            internal
+          />
+          <Resource
+            href="/wellness/gratitude"
+            emoji="🙏"
+            text="Gratitude journalling"
+            internal
+          />
+          <Resource href={YOGA_URL} emoji="🧘" text="Yoga on Campus" />
+          <Resource href={FOLIO_URL} emoji="🎓" text="UAlberta Folio article" />
+          <Resource href={REPAIR_URL} emoji="🧵" text="H-ECOL Repair Café" />
+        </section>
+
+        {/* PDF */}
+        <section style={section()}>
+          <h2 style={sectionTitle()}>📄 Managing Eco-Anxiety</h2>
+
+          <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>
+            If the PDF doesn’t load inline on your browser, use the button below.
+          </div>
+
+          <iframe
+            src={PDF_URL}
+            title="Managing Eco-Anxiety PDF"
+            style={pdf()}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+
+          <div style={{ marginTop: 10 }}>
+            <a
+              href={PDF_URL}
+              target="_blank"
+              rel="noreferrer"
               style={{
-                marginLeft: 10,
+                display: "inline-block",
                 padding: "10px 12px",
                 borderRadius: 14,
-                border: "1px solid rgba(0,0,0,0.14)",
-                background: "white",
+                border: "1px solid #ddd",
+                background: "#fff",
+                color: "#111",
+                textDecoration: "none",
+                fontWeight: 700,
               }}
-            />
-          </label>
-        </div>
-
-        <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
-          <Input value={l1} setValue={setL1} placeholder="1) Today I’m grateful for…" />
-          <Input value={l2} setValue={setL2} placeholder="2) Something small that helped me…" />
-          <Input value={l3} setValue={setL3} placeholder="3) A person/place/moment I appreciate…" />
-        </div>
-
-        <button
-          onClick={save}
-          style={{
-            marginTop: 14,
-            padding: "12px 14px",
-            borderRadius: 16,
-            border: "1px solid rgba(21,71,52,0.22)",
-            background: "rgba(21,71,52,0.14)",
-            cursor: "pointer",
-            fontWeight: 900,
-          }}
-        >
-          {saved ? "✅ Saved" : "💾 Save"}
-        </button>
+            >
+              Open PDF in new tab ↗
+            </a>
+          </div>
+        </section>
       </div>
     </div>
   );
 }
 
-function Input(props: {
-  value: string;
-  setValue: (v: string) => void;
-  placeholder: string;
+/* ---------- COMPONENTS ---------- */
+function Resource({
+  href,
+  emoji,
+  text,
+  internal,
+}: {
+  href: string;
+  emoji: string;
+  text: string;
+  internal?: boolean;
 }) {
+  const commonStyle: React.CSSProperties = resource();
+
+  if (internal) {
+    return (
+      <Link href={href} style={commonStyle}>
+        <span>{emoji}</span>
+        <span>{text}</span>
+        <span style={{ marginLeft: "auto", opacity: 0.6 }}>→</span>
+      </Link>
+    );
+  }
+
   return (
-    <input
-      value={props.value}
-      onChange={(e) => props.setValue(e.target.value)}
-      placeholder={props.placeholder}
-      style={{
-        width: "100%",
-        padding: "12px 12px",
-        borderRadius: 16,
-        border: "1px solid rgba(0,0,0,0.14)",
-        background: "rgba(255,255,255,0.92)",
-        outline: "none",
-      }}
-    />
+    <a href={href} target="_blank" rel="noreferrer" style={commonStyle}>
+      <span>{emoji}</span>
+      <span>{text}</span>
+      <span style={{ marginLeft: "auto", opacity: 0.6 }}>↗</span>
+    </a>
   );
 }
+
+/* ---------- STYLES ---------- */
+const page = (): React.CSSProperties => ({
+  minHeight: "100vh",
+  padding: 20,
+  background: "linear-gradient(180deg, #f5f7f6 0%, #e8eeeb 100%)",
+});
+
+const paper = (): React.CSSProperties => ({
+  maxWidth: 960,
+  margin: "0 auto",
+  padding: 24,
+  borderRadius: 24,
+  background: "linear-gradient(#fff 23px, #e6eef0 24px)",
+  boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
+});
+
+const title = (): React.CSSProperties => ({
+  fontSize: 30,
+  fontWeight: 700,
+  margin: 0,
+});
+
+const subtitle = (): React.CSSProperties => ({
+  opacity: 0.75,
+  marginTop: 8,
+  marginBottom: 20,
+});
+
+const section = (): React.CSSProperties => ({
+  marginTop: 20,
+});
+
+const sticky = (): React.CSSProperties => ({
+  marginTop: 20,
+  padding: 16,
+  background: "#fff7cc",
+  borderRadius: 16,
+  border: "1px solid rgba(0,0,0,0.08)",
+});
+
+const sectionTitle = (): React.CSSProperties => ({
+  fontSize: 18,
+  fontWeight: 600,
+  marginBottom: 10,
+});
+
+const video = (): React.CSSProperties => ({
+  width: "100%",
+  aspectRatio: "16 / 9",
+  borderRadius: 16,
+  border: "none",
+  background: "rgba(0,0,0,0.04)",
+});
+
+const textarea = (): React.CSSProperties => ({
+  width: "100%",
+  minHeight: 120,
+  borderRadius: 14,
+  padding: 12,
+  border: "1px solid #ddd",
+  background: "#fff",
+});
+
+const resource = (): React.CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  padding: 12,
+  marginTop: 10,
+  borderRadius: 14,
+  background: "#fff",
+  textDecoration: "none",
+  color: "#111",
+  border: "1px solid #eee",
+  fontWeight: 600,
+});
+
+const pdf = (): React.CSSProperties => ({
+  width: "100%",
+  height: 500,
+  borderRadius: 16,
+  border: "1px solid #ddd",
+  background: "#fff",
+});
