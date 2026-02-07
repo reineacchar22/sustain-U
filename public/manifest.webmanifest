@@ -1,0 +1,13 @@
+{
+  "name": "UAlberta Map (Wrapper)",
+  "short_name": "UAlberta Map",
+  "start_url": "/official",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#154734",
+  "icons": [
+  { "src": "/icons/icon-192.jpg", "sizes": "192x192", "type": "image/jpeg" },
+  { "src": "/icons/icon-512.jpg", "sizes": "512x512", "type": "image/jpeg" }
+]
+}
+

@@ -1,0 +1,35 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "study-001",
+        "name": "Cameron Library",
+        "type": "study_space",
+        "notes": "Quiet and group study spaces"
+      },
+      "geometry": { "type": "Point", "coordinates": [-113.5259, 53.5264] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "study-002",
+        "name": "Rutherford Library",
+        "type": "study_space",
+        "notes": "Historic library with quiet zones"
+      },
+      "geometry": { "type": "Point", "coordinates": [-113.5268, 53.5247] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "study-003",
+        "name": "CCIS Atrium",
+        "type": "study_space",
+        "notes": "Open seating, good for daytime study"
+      },
+      "geometry": { "type": "Point", "coordinates": [-113.5206, 53.5280] }
+    }
+  ]
+}
