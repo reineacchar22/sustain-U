@@ -28,15 +28,10 @@ export default async function MentalHealthDetailPage({
           {tile.links.map((link) => (
             <a
               key={link.name}
-              href={link.url || "#"}
+              href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="
-                block rounded-2xl p-4
-                bg-white/70 backdrop-blur
-                border border-white/50
-                hover:shadow-md transition
-              "
+              className="block rounded-2xl p-4 bg-white/70 backdrop-blur border border-white/50 hover:shadow-md transition"
             >
               <div className="font-medium">{link.name}</div>
               <div className="text-sm text-gray-600 mt-1">Open resource →</div>

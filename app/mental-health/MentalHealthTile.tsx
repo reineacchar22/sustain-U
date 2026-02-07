@@ -4,7 +4,8 @@ type Props = {
   slug: string;
   icon: string;
   title: string;
-  description: string;
+  description?: string;
+  tagline?: string; // ✅ allow tagline
 };
 
 export default function MentalHealthTile({
@@ -12,39 +13,33 @@ export default function MentalHealthTile({
   icon,
   title,
   description,
+  tagline,
 }: Props) {
   return (
     <Link
       href={`/mental-health/${slug}`}
-      className="
-        group block rounded-3xl p-6
-        bg-gradient-to-br from-white/80 to-white/40
-        backdrop-blur-md
-        border border-white/40
-        shadow-sm
-        transition-all duration-300
-        hover:-translate-y-1 hover:shadow-xl
-      "
+      style={{
+        textDecoration: "none",
+        color: "#111",
+        border: "1px solid rgba(0,0,0,0.10)",
+        borderRadius: 18,
+        padding: 14,
+        background: "rgba(255,255,255,0.92)",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+        display: "grid",
+        gap: 8,
+      }}
     >
-      <div className="flex items-start gap-4">
-        <div className="text-4xl leading-none">{icon}</div>
+      <div style={{ fontSize: 28 }}>{icon}</div>
+      <div style={{ fontWeight: 900, fontSize: 16 }}>{title}</div>
 
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 group-hover:underline underline-offset-4">
-            {title}
-          </h3>
+      {/* Prefer description if provided; fall back to tagline */}
+      <div style={{ opacity: 0.75, fontSize: 13, lineHeight: 1.35 }}>
+        {description ?? tagline ?? ""}
+      </div>
 
-          <p className="text-sm text-gray-600 mt-1">
-            {description}
-          </p>
-
-          <div className="mt-4 text-sm text-gray-700 flex items-center gap-2">
-            <span>Explore</span>
-            <span className="transition-transform duration-300 group-hover:translate-x-1">
-              →
-            </span>
-          </div>
-        </div>
+      <div style={{ marginTop: 4, opacity: 0.55, fontWeight: 800 }}>
+        Open →
       </div>
     </Link>
   );
