@@ -50,25 +50,23 @@ export default function WellnessPage() {
         <section style={section()}>
           <h2 style={sectionTitle()}>📺 Gentle reset</h2>
           <iframe
-            style={video()}
-            src={YT_RESET}
+            style={{ ...video(), pointerEvents: "auto", opacity: 1 }}
+            src={`${YT_RESET}?rel=0&playsinline=1`}
             title="Gentle reset video"
             loading="lazy"
-            referrerPolicy="no-referrer"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
           />
         </section>
 
         <section style={section()}>
-          <h2 style={sectionTitle()}>🎤 Eco-anxiety → optimism</h2>
+          <h2 style={sectionTitle()}>🌤️ Eco-anxiety → optimism</h2>
           <iframe
-            style={video()}
-            src={YT_TED}
+            style={{ ...video(), pointerEvents: "auto", opacity: 1 }}
+            src={`${YT_TED}?rel=0&playsinline=1`}
             title="Eco-anxiety to optimism TED talk"
             loading="lazy"
-            referrerPolicy="no-referrer"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
           />
         </section>
@@ -96,7 +94,7 @@ export default function WellnessPage() {
 
         {/* LINKS */}
         <section style={section()}>
-          <h2 style={sectionTitle()}>🧠 Resources</h2>
+          <h2 style={sectionTitle()}>Your Resources</h2>
 
           <Resource
             href="/wellness/anxiety-checkin"
