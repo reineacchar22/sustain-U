@@ -2,55 +2,33 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { notFound } from "next/navigation";
 
-// ─── Data ────────────────────────────────────────────────────────────────────
+type Slug = "breathing" | "name-it" | "tiny-action" | "connection" | "boundaries";
 
-const PAGES = {
-  breathing: {
-    icon: "🫁",
-    title: "2-Minute Breathing",
-    subtitle: "An extended exhale activates your parasympathetic nervous system, shifting you out of fight-or-flight in under two minutes.",
-  },
-  "name-it": {
-    icon: "🧠",
-    title: "Name + Normalize",
-    subtitle: "Naming an emotion reduces its intensity. Neuroscientists call it 'affect labelling' — putting words to feelings calms the amygdala.",
-  },
-  "tiny-action": {
-    icon: "✅",
-    title: "Take a Tiny Action",
-    subtitle: "Anxiety feeds on helplessness. Even the smallest action breaks the cycle and reminds you that you have agency.",
-  },
-  connection: {
-    icon: "🤝",
-    title: "Reach Out & Connect",
-    subtitle: "Eco-anxiety shrinks when shared. You don't have to have answers — just being witnessed by someone who cares is enough.",
-  },
-  boundaries: {
-    icon: "🛡️",
-    title: "Set Boundaries",
-    subtitle: "Staying informed is important, but your nervous system needs recovery time. Boundaries protect your capacity to keep caring.",
-  },
+const PAGES: Record<Slug, { icon: string; title: string; subtitle: string }> = {
+  breathing:    { icon: "🫁", title: "4-2-6 Breathing",      subtitle: "Extend your exhale to activate your parasympathetic nervous system and calm anxiety in under 2 minutes." },
+  "name-it":    { icon: "🧠", title: "Name It to Tame It",   subtitle: "Labelling an emotion reduces its intensity. Putting words to feelings calms the amygdala." },
+  "tiny-action":{ icon: "✅", title: "Take a Tiny Action",   subtitle: "Anxiety feeds on helplessness. Even the smallest step reconnects you to your sense of agency." },
+  connection:   { icon: "🤝", title: "Reach Out & Connect",  subtitle: "Eco-anxiety shrinks when shared. You don't need answers — just being witnessed by someone who cares is enough." },
+  boundaries:   { icon: "🛡️", title: "Set a Media Boundary", subtitle: "Staying informed matters, but your nervous system needs recovery time. Limits protect your capacity to keep caring." },
 };
 
-type Slug = keyof typeof PAGES;
-
-// ─── Shared nav ──────────────────────────────────────────────────────────────
-
-function BackNav() {
+// ─── Shared nav ───────────────────────────────────────────────────────────────
+function BackNav({ title }: { title: string }) {
   return (
-    <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-gray-100">
-      <div className="max-w-2xl mx-auto px-6 h-14 flex items-center">
+    <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-gray-100">
+      <div className="max-w-2xl mx-auto px-5 h-14 flex items-center justify-between">
         <Link
           href="/wellness/anxiety-checkin"
-          className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors no-underline"
+          className="flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors no-underline"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Check-in
         </Link>
+        <span className="text-sm font-semibold text-gray-700">{title}</span>
+        <div className="w-16" />
       </div>
     </div>
   );
@@ -59,317 +37,433 @@ function BackNav() {
 function Hero({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) {
   return (
     <div className="bg-white border-b border-gray-100">
-      <div className="max-w-2xl mx-auto px-6 py-10">
-        <div className="text-5xl mb-5 leading-none">{icon}</div>
-        <h1 className="text-[1.75rem] font-bold text-gray-900 leading-tight">{title}</h1>
-        <p className="mt-3 text-[15px] text-gray-500 leading-relaxed max-w-lg">{subtitle}</p>
+      <div className="max-w-2xl mx-auto px-5 py-8">
+        <div className="text-4xl mb-4 leading-none">{icon}</div>
+        <h1 className="text-2xl font-bold text-gray-900 leading-tight">{title}</h1>
+        <p className="mt-2 text-[15px] text-gray-500 leading-relaxed">{subtitle}</p>
       </div>
     </div>
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">{children}</p>;
-}
-
-// ─── Breathing ───────────────────────────────────────────────────────────────
-
-const BREATH_PHASES = [
-  { name: "Inhale",  cue: "Breathe in…",  duration: 4, scale: 1.35 },
-  { name: "Hold",    cue: "Hold…",         duration: 2, scale: 1.35 },
-  { name: "Exhale",  cue: "Breathe out…", duration: 6, scale: 0.65 },
+// ─── BREATHING ────────────────────────────────────────────────────────────────
+const PHASES = [
+  { name: "Inhale",  cue: "Breathe in slowly…",   secs: 4,  scale: 1.35, color: "#059669" },
+  { name: "Hold",    cue: "Hold gently…",          secs: 2,  scale: 1.35, color: "#0891b2" },
+  { name: "Exhale",  cue: "Breathe out fully…",   secs: 6,  scale: 0.68, color: "#7c3aed" },
 ];
+const TOTAL_ROUNDS = 6;
 
-function BreathingPage() {
-  const [running,  setRunning]  = useState(false);
+function BreathingExercise() {
+  const [running, setRunning]   = useState(false);
+  const [done, setDone]         = useState(false);
   const [phaseIdx, setPhaseIdx] = useState(0);
-  const [count,    setCount]    = useState(BREATH_PHASES[0].duration);
-  const [cycles,   setCycles]   = useState(0);
-  const phaseRef = useRef(0);
-  const countRef = useRef(BREATH_PHASES[0].duration);
+  const [count, setCount]       = useState(PHASES[0].secs);
+  const [rounds, setRounds]     = useState(0);
+
+  const phaseRef  = useRef(0);
+  const countRef  = useRef(PHASES[0].secs);
+  const roundsRef = useRef(0);
 
   useEffect(() => {
     if (!running) return;
-    const interval = setInterval(() => {
+    const id = setInterval(() => {
       countRef.current -= 1;
-      if (countRef.current <= 0) {
-        const next = (phaseRef.current + 1) % BREATH_PHASES.length;
-        if (next === 0) setCycles(c => c + 1);
-        phaseRef.current = next;
-        countRef.current = BREATH_PHASES[next].duration;
-        setPhaseIdx(next);
-      }
       setCount(countRef.current);
+      if (countRef.current <= 0) {
+        const next = (phaseRef.current + 1) % PHASES.length;
+        if (next === 0) {
+          roundsRef.current += 1;
+          setRounds(roundsRef.current);
+          if (roundsRef.current >= TOTAL_ROUNDS) {
+            clearInterval(id);
+            setRunning(false);
+            setDone(true);
+            return;
+          }
+        }
+        phaseRef.current = next;
+        countRef.current = PHASES[next].secs;
+        setPhaseIdx(next);
+        setCount(PHASES[next].secs);
+      }
     }, 1000);
-    return () => clearInterval(interval);
+    return () => clearInterval(id);
   }, [running]);
 
   const start = () => {
-    phaseRef.current = 0;
-    countRef.current = BREATH_PHASES[0].duration;
-    setPhaseIdx(0);
-    setCount(BREATH_PHASES[0].duration);
-    setCycles(0);
-    setRunning(true);
+    phaseRef.current = 0; countRef.current = PHASES[0].secs; roundsRef.current = 0;
+    setPhaseIdx(0); setCount(PHASES[0].secs); setRounds(0);
+    setDone(false); setRunning(true);
   };
 
   const stop = () => setRunning(false);
 
-  const phase = BREATH_PHASES[phaseIdx];
-  const scale = running ? phase.scale : 0.75;
-  const dur   = running ? phase.duration : 0.4;
+  const phase = PHASES[phaseIdx];
+  const scale = running ? phase.scale : 0.78;
+  const dur   = running ? phase.secs  : 0.4;
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8 space-y-5">
+    <div className="max-w-2xl mx-auto px-5 py-6 space-y-4">
+
+      {/* Circle */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center">
-        <div
-          style={{
-            width: 160, height: 160, borderRadius: "50%",
-            background: running ? "#e8f6ef" : "#f3f4f6",
-            border: `3px solid ${running ? "#2a9d6e" : "#d1d5db"}`,
-            transform: `scale(${scale})`,
-            transition: `transform ${dur}s ease-in-out, background 0.4s, border-color 0.4s`,
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center", gap: 4,
-          }}
-        >
-          <span className="text-[36px] font-bold tabular-nums text-gray-800" style={{ color: running ? "#1a5c42" : "#9ca3af" }}>
-            {running ? count : ""}
-          </span>
-          {!running && <span className="text-[28px]">🫁</span>}
+        <div style={{
+          width: 170, height: 170, borderRadius: "50%",
+          background: done ? "#f0fdf4" : running ? "#ecfdf5" : "#f9fafb",
+          border: `3px solid ${done ? "#16a34a" : running ? phase.color : "#e5e7eb"}`,
+          transform: `scale(${scale})`,
+          transition: `transform ${dur}s ease-in-out, border-color 0.5s, background 0.5s`,
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+        }}>
+          {done ? (
+            <>
+              <span style={{ fontSize: 36 }}>✓</span>
+              <span className="text-[13px] font-bold text-emerald-700">Complete!</span>
+            </>
+          ) : running ? (
+            <>
+              <span style={{ fontSize: 44, fontWeight: 800, color: phase.color, fontVariantNumeric: "tabular-nums" }}>{count}</span>
+              <span className="text-[12px] font-semibold text-gray-400">{phase.name}</span>
+            </>
+          ) : (
+            <span className="text-[15px] font-semibold text-gray-400 text-center px-4">Ready when you are</span>
+          )}
         </div>
 
-        <p className="mt-6 text-[18px] font-semibold text-gray-700 h-7">
-          {running ? phase.cue : "Ready when you are"}
+        <p className="mt-6 text-[17px] font-semibold text-gray-700 text-center h-6">
+          {done ? "Wonderful. Take a moment to notice how you feel." : running ? phase.cue : ""}
         </p>
-        {running && (
-          <p className="mt-1 text-[13px] text-gray-400">{phase.name} · {phase.duration}s</p>
-        )}
-        {cycles > 0 && (
-          <p className="mt-2 text-[13px] font-semibold text-emerald-600">{cycles} cycle{cycles !== 1 ? "s" : ""} complete</p>
+
+        {/* Round dots */}
+        {!done && (
+          <div className="flex gap-2 mt-4">
+            {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
+              <div key={i} className="w-2.5 h-2.5 rounded-full transition-colors" style={{ background: i < rounds ? "#16a34a" : "#e5e7eb" }} />
+            ))}
+          </div>
         )}
 
         <div className="flex gap-3 mt-6">
-          {!running ? (
+          {done ? (
             <button onClick={start} className="px-8 py-3 rounded-xl bg-emerald-700 text-white text-[14px] font-bold hover:bg-emerald-600 transition-colors">
+              Go again
+            </button>
+          ) : !running ? (
+            <button onClick={start} className="px-10 py-3 rounded-xl bg-emerald-700 text-white text-[15px] font-bold hover:bg-emerald-600 transition-colors">
               Start
             </button>
           ) : (
-            <button onClick={stop} className="px-8 py-3 rounded-xl bg-gray-100 text-gray-700 text-[14px] font-bold hover:bg-gray-200 transition-colors">
-              Stop
+            <button onClick={stop} className="px-10 py-3 rounded-xl bg-gray-100 text-gray-700 text-[15px] font-bold hover:bg-gray-200 transition-colors">
+              Pause
             </button>
           )}
         </div>
       </div>
 
+      {/* Phase guide */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionLabel>The pattern</SectionLabel>
+        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">The pattern</p>
         <div className="grid grid-cols-3 gap-3">
-          {BREATH_PHASES.map(p => (
-            <div key={p.name} className={[
-              "rounded-xl p-3 text-center border transition-all",
-              running && phaseIdx === BREATH_PHASES.indexOf(p)
-                ? "bg-emerald-50 border-emerald-200"
-                : "bg-gray-50 border-gray-100",
-            ].join(" ")}>
-              <div className="text-[22px] font-bold tabular-nums text-gray-800">{p.duration}s</div>
-              <div className="text-[12px] font-semibold text-gray-500 mt-0.5">{p.name}</div>
+          {PHASES.map((p, i) => (
+            <div key={p.name} className="rounded-xl p-3 text-center border transition-all"
+              style={{ background: running && phaseIdx === i ? p.color + "15" : "#f9fafb", borderColor: running && phaseIdx === i ? p.color + "60" : "#f3f4f6" }}>
+              <div className="text-[22px] font-bold" style={{ color: running && phaseIdx === i ? p.color : "#374151" }}>{p.secs}s</div>
+              <div className="text-[11px] font-semibold text-gray-500 mt-0.5">{p.name}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-        <SectionLabel>Why it works</SectionLabel>
+      {/* Why it works */}
+      <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-5 space-y-2.5">
+        <p className="text-[11px] font-semibold text-emerald-700 uppercase tracking-widest">Why this works</p>
         {[
-          { icon: "📉", text: "A longer exhale than inhale triggers the vagus nerve, slowing your heart rate." },
-          { icon: "🧠", text: "Counting gives your mind a simple anchor, interrupting the anxiety spiral." },
-          { icon: "⏱️", text: "Six repetitions (≈ 72 seconds) is enough to measurably reduce cortisol." },
-        ].map(i => (
-          <div key={i.text} className="flex gap-3">
-            <span className="text-lg flex-shrink-0">{i.icon}</span>
-            <p className="text-[14px] text-gray-600 leading-relaxed">{i.text}</p>
-          </div>
+          "A longer exhale (6s) than inhale (4s) activates the vagus nerve, slowing your heart rate.",
+          "Counting anchors attention, interrupting the anxiety thought loop.",
+          "Six full rounds takes about 72 seconds — measurable cortisol reduction.",
+        ].map(t => (
+          <p key={t} className="text-[13px] text-emerald-900 leading-relaxed">{t}</p>
         ))}
       </div>
-
-      <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-5">
-        <p className="text-[11px] font-semibold text-emerald-700 uppercase tracking-widest mb-2">Variation</p>
-        <p className="text-[14px] text-emerald-900 leading-relaxed font-medium">
-          Try <strong>box breathing</strong> (4–4–4–4) if you prefer a steady rhythm: inhale 4, hold 4, exhale 4, hold 4.
-        </p>
-      </div>
     </div>
   );
 }
 
-// ─── Name it ─────────────────────────────────────────────────────────────────
-
-const ECO_FEELINGS = [
-  { word: "Grief",        desc: "Mourning ecosystems, species, or futures that have been lost or are threatened." },
-  { word: "Overwhelm",    desc: "Too much information, too fast — the scale of the crisis feels impossible to hold." },
-  { word: "Helplessness", desc: "The gap between how big the problem is and how small any individual action feels." },
-  { word: "Anger",        desc: "Frustration at inaction, denial, or injustice from individuals, corporations, or governments." },
-  { word: "Guilt",        desc: "Awareness of your own footprint and complicity in a system you didn't design." },
-  { word: "Hope",         desc: "Belief that change is still possible — often fragile, but powerful when found." },
+// ─── NAME IT ─────────────────────────────────────────────────────────────────
+const FRAMES = [
+  { label: "Name the feeling", prompt: "What are you feeling right now? Try to name it precisely.", placeholder: "e.g. dread, helplessness, guilt, anger, grief…" },
+  { label: "Validate it",      prompt: "Write: 'It makes sense that I feel this because…'", placeholder: "e.g. because the news was heavy and I care deeply…" },
+  { label: "Separate self",    prompt: "Finish this: 'I am feeling this, but I am not overwhelmed forever. Right now…'", placeholder: "e.g. I am sitting safely, I have people around me…" },
 ];
 
-const SCRIPTS = [
-  "\"This is eco-anxiety. It's a normal response to a real threat.\"",
-  "\"My feelings are information, not a verdict.\"",
-  "\"I can be both upset about this AND capable of moving forward.\"",
-  "\"Feeling this doesn't mean I'm broken — it means I care.\"",
+const AFFIRMATIONS = [
+  "Feeling this doesn't mean I'm broken — it means I care.",
+  "My feelings are information, not a verdict.",
+  "I can be both worried AND capable of moving forward.",
+  "This is eco-anxiety. It is a normal response to a real threat.",
 ];
 
-function NameItPage() {
+function NameItExercise() {
+  const [step, setStep]       = useState(0);
+  const [answers, setAnswers] = useState(["", "", ""]);
+  const [done, setDone]       = useState(false);
+  const [affirm] = useState(() => AFFIRMATIONS[Math.floor(Math.random() * AFFIRMATIONS.length)]);
+
+  const update = (val: string) => setAnswers(a => { const n = [...a]; n[step] = val; return n; });
+
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8 space-y-5">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionLabel>The 3-step process</SectionLabel>
-        <div className="space-y-3">
-          {[
-            { step: "1", name: "Notice",    desc: "Pause. Place one hand on your chest. Ask: what am I feeling right now?" },
-            { step: "2", name: "Name it",   desc: "Find a word for it. Grief, anger, guilt, overwhelm, helplessness, hope. The more specific, the better." },
-            { step: "3", name: "Normalize it", desc: "Say out loud or in your head: 'This feeling makes sense. It's okay to feel this way.'" },
-          ].map(s => (
-            <div key={s.step} className="flex gap-4 items-start">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[14px] flex items-center justify-center flex-shrink-0 mt-0.5">
-                {s.step}
-              </div>
-              <div>
-                <div className="text-[14px] font-bold text-gray-900">{s.name}</div>
-                <div className="text-[13px] text-gray-500 mt-0.5 leading-relaxed">{s.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="max-w-2xl mx-auto px-5 py-6 space-y-4">
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionLabel>Eco-feeling dictionary</SectionLabel>
-        <div className="space-y-3">
-          {ECO_FEELINGS.map(f => (
-            <div key={f.word} className="flex gap-3 items-start">
-              <span className="text-[13px] font-bold text-emerald-700 w-24 flex-shrink-0 pt-0.5">{f.word}</span>
-              <span className="text-[13px] text-gray-500 leading-relaxed">{f.desc}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      {!done ? (
+        <>
+          {/* Progress */}
+          <div className="flex gap-2">
+            {FRAMES.map((_, i) => (
+              <div key={i} className="h-1.5 flex-1 rounded-full transition-colors"
+                style={{ background: i <= step ? "#059669" : "#e5e7eb" }} />
+            ))}
+          </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionLabel>Scripts to say to yourself</SectionLabel>
-        <div className="space-y-3">
-          {SCRIPTS.map(s => (
-            <div key={s} className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-100">
-              <p className="text-[14px] text-emerald-900 leading-relaxed">{s}</p>
+          {/* Current step */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="inline-flex items-center gap-2 mb-3">
+              <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-[12px] font-bold flex items-center justify-center">{step + 1}</span>
+              <span className="text-[12px] font-semibold text-emerald-700 uppercase tracking-wider">{FRAMES[step].label}</span>
+            </div>
+            <p className="text-[15px] font-semibold text-gray-800 mb-4 leading-relaxed">{FRAMES[step].prompt}</p>
+            <textarea
+              value={answers[step]}
+              onChange={e => update(e.target.value)}
+              placeholder={FRAMES[step].placeholder}
+              rows={4}
+              className="w-full text-[14px] text-gray-800 placeholder:text-gray-400 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none resize-none transition-all focus:border-emerald-300 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+            />
+            <div className="flex justify-between mt-4">
+              {step > 0 ? (
+                <button onClick={() => setStep(s => s - 1)} className="px-5 py-2.5 rounded-xl text-[14px] font-semibold text-gray-500 hover:text-gray-700 transition-colors">
+                  ← Back
+                </button>
+              ) : <div />}
+              <button
+                onClick={() => step < FRAMES.length - 1 ? setStep(s => s + 1) : setDone(true)}
+                disabled={!answers[step].trim()}
+                className="px-6 py-2.5 rounded-xl bg-emerald-700 text-white text-[14px] font-bold hover:bg-emerald-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {step < FRAMES.length - 1 ? "Next →" : "Finish"}
+              </button>
+            </div>
+          </div>
+
+          {/* Previous answers */}
+          {step > 0 && answers.slice(0, step).map((a, i) => (
+            <div key={i} className="bg-gray-50 rounded-xl border border-gray-100 px-4 py-3">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">{FRAMES[i].label}</p>
+              <p className="text-[13px] text-gray-600 leading-relaxed">{a}</p>
             </div>
           ))}
-        </div>
-      </div>
+        </>
+      ) : (
+        <>
+          {/* Done */}
+          <div className="bg-white rounded-2xl border border-emerald-200 shadow-sm p-6 text-center">
+            <div className="text-4xl mb-3">✓</div>
+            <h2 className="text-[17px] font-bold text-gray-900 mb-2">Well done</h2>
+            <p className="text-[14px] text-gray-500 leading-relaxed">You named it. That takes courage.</p>
+          </div>
+
+          {/* Affirmation */}
+          <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-5 text-center">
+            <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-widest mb-3">Carry this with you</p>
+            <p className="text-[17px] font-bold text-emerald-900 leading-relaxed italic">&ldquo;{affirm}&rdquo;</p>
+          </div>
+
+          {/* Summary */}
+          <div className="space-y-3">
+            {FRAMES.map((f, i) => (
+              <div key={i} className="bg-white rounded-xl border border-gray-100 px-4 py-3">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">{f.label}</p>
+                <p className="text-[13px] text-gray-700 leading-relaxed">{answers[i]}</p>
+              </div>
+            ))}
+          </div>
+
+          <button onClick={() => { setStep(0); setAnswers(["","",""]); setDone(false); }}
+            className="w-full py-3.5 rounded-2xl bg-emerald-700 text-white text-[14px] font-bold hover:bg-emerald-600 transition-colors">
+            Start again
+          </button>
+        </>
+      )}
     </div>
   );
 }
 
-// ─── Tiny action ─────────────────────────────────────────────────────────────
-
+// ─── TINY ACTION ─────────────────────────────────────────────────────────────
 const ACTIONS = [
-  { time: "< 5 min",  items: ["Fill and carry a reusable bottle", "Share a climate resource with one person", "Turn off lights in unused rooms", "Take the stairs instead of the elevator"] },
-  { time: "< 30 min", items: ["Take transit for one trip today", "Cook or order a plant-based meal", "Walk or bike somewhere you'd usually drive"] },
-  { time: "Anytime",  items: ["Message a friend to walk together", "Follow a local climate group", "Write one thing you're grateful for in nature"] },
+  { time: "2 min",  text: "Refill and carry a reusable bottle today",         pts: 10 },
+  { time: "2 min",  text: "Share one climate resource with a friend",          pts: 10 },
+  { time: "2 min",  text: "Turn off lights in rooms you're not using",         pts: 5  },
+  { time: "5 min",  text: "Write down one thing you're grateful for in nature",pts: 15 },
+  { time: "5 min",  text: "Look up one local climate group or event",          pts: 15 },
+  { time: "10 min", text: "Choose plant-based for your next meal",             pts: 20 },
+  { time: "10 min", text: "Walk or bike for one trip instead of driving",      pts: 20 },
+  { time: "10 min", text: "Message someone to take a walk together",           pts: 20 },
+  { time: "Today",  text: "Take transit instead of a car for one journey",     pts: 25 },
+  { time: "Today",  text: "Bring your own bag to the next store run",          pts: 10 },
 ];
 
-function TinyActionPage() {
-  const [checked, setChecked] = useState<Set<string>>(new Set());
-  const toggle = (item: string) =>
-    setChecked(prev => { const n = new Set(prev); n.has(item) ? n.delete(item) : n.add(item); return n; });
+function TinyActionExercise() {
+  const [selected, setSelected] = useState<number | null>(null);
+  const [committed, setCommitted] = useState(false);
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8 space-y-5">
-      <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-5">
-        <p className="text-[11px] font-semibold text-emerald-700 uppercase tracking-widest mb-2">Why this helps</p>
-        <p className="text-[14px] text-emerald-900 leading-relaxed">
-          Anxiety feeds on helplessness. Taking even the smallest action reconnects you to your sense of agency — it shifts you from passive worry to active participation.
-        </p>
-      </div>
+    <div className="max-w-2xl mx-auto px-5 py-6 space-y-4">
 
-      {ACTIONS.map(group => (
-        <div key={group.time} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <SectionLabel>{group.time}</SectionLabel>
-          <div className="space-y-2">
-            {group.items.map(item => (
-              <button key={item} onClick={() => toggle(item)} className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all hover:bg-gray-50">
-                <div className={["w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all", checked.has(item) ? "bg-emerald-600 border-emerald-600" : "border-gray-300"].join(" ")}>
-                  {checked.has(item) && (
-                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
+      {!committed ? (
+        <>
+          <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-4">
+            <p className="text-[13px] text-emerald-900 leading-relaxed font-medium">
+              Pick <strong>one</strong> action below that feels doable today. Small steps break the anxiety cycle and rebuild your sense of agency.
+            </p>
+          </div>
+
+          <div className="space-y-2.5">
+            {ACTIONS.map((a, i) => (
+              <button key={i} onClick={() => setSelected(i)}
+                className="w-full flex items-center gap-3 p-4 rounded-2xl border-2 text-left transition-all"
+                style={{
+                  borderColor: selected === i ? "#059669" : "#f3f4f6",
+                  background:  selected === i ? "#f0fdf4" : "white",
+                }}>
+                <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
+                  style={{ borderColor: selected === i ? "#059669" : "#d1d5db", background: selected === i ? "#059669" : "white" }}>
+                  {selected === i && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                 </div>
-                <span className={["text-[14px] font-medium transition-all", checked.has(item) ? "line-through text-gray-400" : "text-gray-700"].join(" ")}>
-                  {item}
-                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-semibold text-gray-800 leading-snug">{a.text}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">{a.time} · +{a.pts} pts</p>
+                </div>
               </button>
             ))}
           </div>
-        </div>
-      ))}
 
-      {checked.size > 0 && (
-        <div className="bg-white rounded-2xl border border-emerald-200 shadow-sm p-4 text-center">
-          <p className="text-[15px] font-bold text-emerald-700">{checked.size} action{checked.size !== 1 ? "s" : ""} completed today</p>
-          <p className="text-[13px] text-gray-400 mt-1">Every step counts.</p>
+          <button
+            onClick={() => selected !== null && setCommitted(true)}
+            disabled={selected === null}
+            className="w-full py-4 rounded-2xl bg-emerald-700 text-white text-[15px] font-bold transition-colors disabled:opacity-35 disabled:cursor-not-allowed hover:bg-emerald-600"
+          >
+            I commit to this →
+          </button>
+        </>
+      ) : (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-emerald-200 shadow-sm p-7 text-center">
+            <div className="text-5xl mb-4">✅</div>
+            <h2 className="text-[18px] font-bold text-gray-900 mb-2">Committed!</h2>
+            <p className="text-[15px] text-gray-500 mb-4">Your action:</p>
+            <div className="bg-emerald-50 rounded-xl border border-emerald-100 px-4 py-3">
+              <p className="text-[15px] font-bold text-emerald-900">{ACTIONS[selected!].text}</p>
+            </div>
+          </div>
+
+          <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-5 space-y-2">
+            <p className="text-[11px] font-semibold text-emerald-700 uppercase tracking-widest">Remember</p>
+            <p className="text-[14px] text-emerald-900 leading-relaxed">
+              You don&apos;t have to fix the climate today. You just have to do <strong>one thing</strong>. That one thing shifts you from helpless to active — and that shift changes everything.
+            </p>
+          </div>
+
+          <button onClick={() => { setSelected(null); setCommitted(false); }}
+            className="w-full py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 text-[14px] font-bold hover:border-emerald-300 hover:text-emerald-700 transition-colors">
+            Choose a different action
+          </button>
         </div>
       )}
     </div>
   );
 }
 
-// ─── Connection ───────────────────────────────────────────────────────────────
-
-const TEMPLATES = [
-  { label: "Low-key check-in",  text: "Hey — been feeling a lot about climate stuff lately. Want to take a short walk and talk sometime?" },
-  { label: "Group chat opener", text: "Anyone else feeling the weight of the environmental news lately? I'd love to talk about it with people who get it." },
-  { label: "Invite to act",     text: "I've been wanting to do something small but meaningful this week. Want to join me?" },
+// ─── CONNECTION ───────────────────────────────────────────────────────────────
+const SCRIPTS = [
+  {
+    label: "Low-key check-in",
+    msg:   "Hey — I've been feeling a lot about climate stuff lately. Would you be up for a short walk and a chat sometime?",
+  },
+  {
+    label: "Group chat opener",
+    msg:   "Anyone else feeling heavy after reading the news lately? I'd love to talk with people who get it.",
+  },
+  {
+    label: "Invite to act",
+    msg:   "I've been wanting to do something small but meaningful. Want to join me for [action] this week?",
+  },
+  {
+    label: "Simple share",
+    msg:   "Thinking of you. Climate stuff has been weighing on me — how are you holding up?",
+  },
 ];
 
 const STARTERS = [
-  "\"What climate story has been sitting with you lately?\"",
-  "\"What gives you hope about the environment?\"",
-  "\"How do you take care of yourself when climate news feels heavy?\"",
-  "\"Is there something small we could do together this week?\"",
+  '“What climate story has been sitting with you lately?”',
+  '“What gives you hope about the environment right now?”',
+  '“How do you take care of yourself when the news feels heavy?”',
+  '“Is there one small thing we could do together this week?”',
 ];
 
-function ConnectionPage() {
-  const [copied, setCopied] = useState<string | null>(null);
+function ConnectionExercise() {
+  const [copied, setCopied]   = useState<string | null>(null);
+  const [reached, setReached] = useState(false);
+
   const copy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(label);
-      setTimeout(() => setCopied(null), 1800);
-    });
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopied(label);
+    setTimeout(() => setCopied(null), 2000);
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8 space-y-5">
+    <div className="max-w-2xl mx-auto px-5 py-6 space-y-4">
+
+      <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-4">
+        <p className="text-[13px] text-emerald-900 leading-relaxed">
+          You don&apos;t need to have answers or solutions. Just reaching out — saying &quot;me too&quot; — is enough to make eco-anxiety feel less isolating.
+        </p>
+      </div>
+
+      {/* Scripts */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionLabel>Ready-to-send messages</SectionLabel>
+        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Ready-to-send messages — tap to copy</p>
         <div className="space-y-3">
-          {TEMPLATES.map(t => (
-            <div key={t.label} className="p-4 rounded-xl bg-gray-50 border border-gray-100">
+          {SCRIPTS.map(s => (
+            <div key={s.label} className="p-4 rounded-xl bg-gray-50 border border-gray-100 transition-all hover:border-emerald-200">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[12px] font-bold text-gray-500">{t.label}</span>
-                <button onClick={() => copy(t.text, t.label)} className="text-[12px] font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
-                  {copied === t.label ? "✓ Copied" : "Copy"}
+                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{s.label}</span>
+                <button
+                  onClick={() => copy(s.msg, s.label)}
+                  className="flex items-center gap-1.5 text-[12px] font-bold transition-colors"
+                  style={{ color: copied === s.label ? "#059669" : "#6b7280" }}
+                >
+                  {copied === s.label ? (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                      Copy
+                    </>
+                  )}
                 </button>
               </div>
-              <p className="text-[13px] text-gray-700 leading-relaxed">{t.text}</p>
+              <p className="text-[13px] text-gray-700 leading-relaxed">{s.msg}</p>
             </div>
           ))}
         </div>
       </div>
 
+      {/* Conversation starters */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionLabel>Conversation starters</SectionLabel>
+        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Conversation starters</p>
         <div className="space-y-2.5">
           {STARTERS.map(s => (
             <div key={s} className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-100">
@@ -379,56 +473,44 @@ function ConnectionPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionLabel>Connect locally</SectionLabel>
-        <div className="space-y-3">
-          {[
-            { name: "Climate Action UAlberta Coalition", url: "https://www.uaclimateaction.ca/" },
-            { name: "Edmonton Youth for Climate",        url: "https://www.instagram.com/edmontonyouthforclimate/" },
-            { name: "Climate Justice Edmonton",          url: "https://climatejusticeedmonton.com/" },
-          ].map(g => (
-            <a key={g.name} href={g.url} target="_blank" rel="noreferrer"
-              className="flex items-center justify-between p-3.5 rounded-xl border border-gray-100 bg-gray-50 hover:border-emerald-200 hover:bg-emerald-50 transition-all no-underline">
-              <span className="text-[14px] font-semibold text-gray-800">{g.name}</span>
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-            </a>
-          ))}
+      {/* Commit */}
+      {!reached ? (
+        <button onClick={() => setReached(true)}
+          className="w-full py-4 rounded-2xl bg-emerald-700 text-white text-[15px] font-bold hover:bg-emerald-600 transition-colors">
+          I reached out ✓
+        </button>
+      ) : (
+        <div className="bg-white rounded-2xl border border-emerald-200 p-5 text-center">
+          <p className="text-3xl mb-2">🤝</p>
+          <p className="text-[16px] font-bold text-gray-900 mb-1">That took courage.</p>
+          <p className="text-[13px] text-gray-500 leading-relaxed">Connection is one of the most powerful antidotes to eco-anxiety. Well done.</p>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-// ─── Boundaries ───────────────────────────────────────────────────────────────
+// ─── BOUNDARIES ───────────────────────────────────────────────────────────────
+const TIMER_SECS = 10 * 60;
 
-const ALTERNATIVES = [
-  { icon: "🌿", text: "Step outside for 5 minutes" },
-  { icon: "🫁", text: "Do the 4-2-6 breathing exercise" },
-  { icon: "☕", text: "Make tea or a snack" },
-  { icon: "🚶", text: "Walk around the block" },
-  { icon: "📖", text: "Read a page of a book" },
-  { icon: "🎵", text: "Put on a favourite song" },
-];
-
-function BoundariesPage() {
-  const TIMER_SECS = 10 * 60;
-  const [timeLeft, setTimeLeft] = useState(TIMER_SECS);
-  const [running,  setRunning]  = useState(false);
-  const [finished, setFinished] = useState(false);
+function BoundariesExercise() {
+  const [timeLeft, setTimeLeft]   = useState(TIMER_SECS);
+  const [running, setRunning]     = useState(false);
+  const [finished, setFinished]   = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const start = useCallback(() => {
-    setTimeLeft(TIMER_SECS);
-    setFinished(false);
-    setRunning(true);
+    setTimeLeft(TIMER_SECS); setFinished(false); setRunning(true);
   }, []);
 
-  const stop = useCallback(() => {
+  const pause = useCallback(() => {
     setRunning(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
   }, []);
+
+  const reset = useCallback(() => {
+    pause(); setTimeLeft(TIMER_SECS); setFinished(false);
+  }, [pause]);
 
   useEffect(() => {
     if (!running) return;
@@ -441,91 +523,130 @@ function BoundariesPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [running]);
 
-  const mins = Math.floor(timeLeft / 60).toString().padStart(2, "0");
-  const secs = (timeLeft % 60).toString().padStart(2, "0");
-  const pct  = ((TIMER_SECS - timeLeft) / TIMER_SECS) * 100;
+  const mins  = Math.floor(timeLeft / 60).toString().padStart(2, "0");
+  const secs  = (timeLeft % 60).toString().padStart(2, "0");
+  const pct   = ((TIMER_SECS - timeLeft) / TIMER_SECS) * 100;
+  const r     = 52;
+  const circ  = 2 * Math.PI * r;
+  const dash  = circ * (1 - pct / 100);
+  const color = finished ? "#16a34a" : running ? "#0891b2" : "#d1d5db";
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8 space-y-5">
+    <div className="max-w-2xl mx-auto px-5 py-6 space-y-4">
+
+      {/* Timer card */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col items-center">
-        <SectionLabel>10-minute timer</SectionLabel>
-        <div className="relative w-36 h-36 my-2">
+        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-5">10-minute media limit</p>
+
+        {/* SVG ring */}
+        <div className="relative w-40 h-40">
           <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-            <circle cx={60} cy={60} r={52} fill="none" stroke="#f3f4f6" strokeWidth={8} />
-            <circle cx={60} cy={60} r={52} fill="none"
-              stroke={finished ? "#16a34a" : running ? "#1a5c42" : "#d1d5db"}
-              strokeWidth={8}
-              strokeDasharray={`${2 * Math.PI * 52}`}
-              strokeDashoffset={`${2 * Math.PI * 52 * (1 - pct / 100)}`}
-              strokeLinecap="round"
-              style={{ transition: "stroke-dashoffset 1s linear, stroke 0.4s" }}
-            />
+            <circle cx={60} cy={60} r={r} fill="none" stroke="#f3f4f6" strokeWidth={8} />
+            <circle cx={60} cy={60} r={r} fill="none" stroke={color} strokeWidth={8}
+              strokeDasharray={circ} strokeDashoffset={dash} strokeLinecap="round"
+              style={{ transition: "stroke-dashoffset 1s linear, stroke 0.4s" }} />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-[28px] font-bold tabular-nums text-gray-800">
+            <span className="text-[30px] font-bold tabular-nums" style={{ color: finished ? "#16a34a" : "#111827" }}>
               {finished ? "✓" : `${mins}:${secs}`}
             </span>
-            {finished && <span className="text-[12px] font-semibold text-emerald-600 mt-0.5">Done!</span>}
+            {finished && <span className="text-[12px] font-bold text-emerald-600 mt-1">Time&apos;s up!</span>}
           </div>
         </div>
 
-        <div className="flex gap-3 mt-4">
-          {!running && !finished && <button onClick={start} className="px-8 py-3 rounded-xl bg-emerald-700 text-white text-[14px] font-bold hover:bg-emerald-600 transition-colors">Start timer</button>}
-          {running  && <button onClick={stop}  className="px-8 py-3 rounded-xl bg-gray-100 text-gray-700 text-[14px] font-bold hover:bg-gray-200 transition-colors">Stop</button>}
-          {finished && <button onClick={start} className="px-8 py-3 rounded-xl bg-emerald-700 text-white text-[14px] font-bold hover:bg-emerald-600 transition-colors">Go again</button>}
+        {/* Controls */}
+        <div className="flex gap-3 mt-6">
+          {!running && !finished && (
+            <button onClick={start} className="px-8 py-3 rounded-xl bg-emerald-700 text-white text-[14px] font-bold hover:bg-emerald-600 transition-colors">
+              Start timer
+            </button>
+          )}
+          {running && (
+            <>
+              <button onClick={pause} className="px-6 py-3 rounded-xl bg-gray-100 text-gray-700 text-[14px] font-bold hover:bg-gray-200 transition-colors">
+                Pause
+              </button>
+              <button onClick={reset} className="px-6 py-3 rounded-xl bg-gray-100 text-gray-700 text-[14px] font-bold hover:bg-gray-200 transition-colors">
+                Reset
+              </button>
+            </>
+          )}
+          {finished && (
+            <button onClick={start} className="px-8 py-3 rounded-xl bg-emerald-700 text-white text-[14px] font-bold hover:bg-emerald-600 transition-colors">
+              Start again
+            </button>
+          )}
+          {!running && !finished && timeLeft < TIMER_SECS && (
+            <button onClick={reset} className="px-5 py-3 rounded-xl bg-gray-100 text-gray-600 text-[14px] font-bold hover:bg-gray-200 transition-colors">
+              Reset
+            </button>
+          )}
         </div>
 
         <p className="mt-4 text-[13px] text-gray-400 text-center max-w-xs leading-relaxed">
-          Set a limit on news or social media. When this goes off — put the phone down.
+          {finished
+            ? "Put the phone down. Your nervous system will thank you."
+            : "When this goes off, close the news or social media — no exceptions."}
         </p>
       </div>
 
+      {/* What to do instead */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <SectionLabel>What to do instead</SectionLabel>
-        <div className="grid grid-cols-2 gap-2">
-          {ALTERNATIVES.map(a => (
-            <div key={a.text} className="flex items-center gap-2.5 p-3 rounded-xl bg-gray-50 border border-gray-100">
-              <span className="text-lg flex-shrink-0">{a.icon}</span>
-              <span className="text-[13px] font-medium text-gray-700 leading-snug">{a.text}</span>
+        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">After the timer — try one of these</p>
+        <div className="grid grid-cols-2 gap-2.5">
+          {[
+            ["🌿", "Step outside for 5 min"],
+            ["🫁", "Do the 4-2-6 breathing"],
+            ["☕", "Make tea or a snack"],
+            ["🚶", "Walk around the block"],
+            ["📖", "Read a page of a book"],
+            ["🎵", "Put on a favourite song"],
+          ].map(([icon, text]) => (
+            <div key={text} className="flex items-center gap-2.5 p-3 rounded-xl bg-gray-50 border border-gray-100">
+              <span className="text-lg flex-shrink-0">{icon}</span>
+              <span className="text-[12px] font-medium text-gray-700 leading-snug">{text}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-        <SectionLabel>Why it matters</SectionLabel>
+      {/* Why it matters */}
+      <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-5 space-y-2.5">
+        <p className="text-[11px] font-semibold text-emerald-700 uppercase tracking-widest">Why limits help</p>
         {[
-          { icon: "📵", text: "Reading more bad news doesn't change it — but it does keep your nervous system in alarm mode." },
-          { icon: "🔋", text: "Recovery time is what allows you to keep caring and acting over the long term." },
-          { icon: "📰", text: "You can stay meaningfully informed with 1–2 intentional news checks per day." },
-        ].map(i => (
-          <div key={i.text} className="flex gap-3">
-            <span className="text-lg flex-shrink-0">{i.icon}</span>
-            <p className="text-[14px] text-gray-600 leading-relaxed">{i.text}</p>
-          </div>
+          "Reading more bad news doesn't change it — but it keeps your nervous system in alarm mode.",
+          "Recovery time is what lets you keep caring and acting over the long term.",
+          "1–2 intentional news checks per day is enough to stay meaningfully informed.",
+        ].map(t => (
+          <p key={t} className="text-[13px] text-emerald-900 leading-relaxed">{t}</p>
         ))}
       </div>
     </div>
   );
 }
 
-// ─── Main client component ────────────────────────────────────────────────────
-
+// ─── Router ───────────────────────────────────────────────────────────────────
 export default function AnxietyCheckinClient({ slug }: { slug: string }) {
-  if (!(slug in PAGES)) notFound();
+  if (!(slug in PAGES)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Exercise not found.</p>
+      </div>
+    );
+  }
   const page = PAGES[slug as Slug];
 
   const content: Record<Slug, React.ReactNode> = {
-    breathing:     <BreathingPage />,
-    "name-it":     <NameItPage />,
-    "tiny-action": <TinyActionPage />,
-    connection:    <ConnectionPage />,
-    boundaries:    <BoundariesPage />,
+    breathing:     <BreathingExercise />,
+    "name-it":     <NameItExercise />,
+    "tiny-action": <TinyActionExercise />,
+    connection:    <ConnectionExercise />,
+    boundaries:    <BoundariesExercise />,
   };
 
   return (
     <div className="min-h-screen bg-[#f7f8fa]">
-      <BackNav />
+      <BackNav title={page.title} />
       <Hero icon={page.icon} title={page.title} subtitle={page.subtitle} />
       {content[slug as Slug]}
     </div>

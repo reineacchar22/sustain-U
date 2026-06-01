@@ -1,11 +1,5 @@
-"use client";
-
-import { useEffect } from "react";
+import OfficialMapPage from "./official/page";
 
 export default function Home() {
-  useEffect(() => {
-    window.location.replace("/official/");
-  }, []);
-
-  return null;
+  return <OfficialMapPage />;
 }

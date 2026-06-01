@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -763,6 +764,11 @@ export default function CO2App() {
       <div className="shell">
         {/* Header */}
         <header className="app-header">
+          <Link href="/" style={{ display:"flex", alignItems:"center", gap:6, textDecoration:"none", color:"var(--text2)", flexShrink:0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+          </Link>
           <div className="header-brand">
             <div className="header-logo">🌿</div>
             <div>

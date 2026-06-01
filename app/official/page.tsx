@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import Link from "next/link";
+import Script from "next/script";
+import { useEffect, useRef, useState } from "react";
 
 // ─── Category config ──────────────────────────────────────────────────────────
 const CATS: Record<string, { label: string; color: string; bg: string; emoji: string }> = {
@@ -266,9 +268,9 @@ const CSS = `
 .off-header-title { font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: -0.2px; }
 .off-header-right { font-size: 12px; color: var(--muted); }
 
-.off-app { display: grid; grid-template-columns: 320px 1fr; flex: 1; overflow: hidden; min-height: 0; }
+.off-app { display: flex; flex-direction: row; flex: 1; overflow: hidden; min-height: 0; }
 
-.off-sidebar { display: flex; flex-direction: column; border-right: 1px solid var(--border); background: white; overflow: hidden; }
+.off-sidebar { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid var(--border); background: white; overflow: hidden; transition: transform 0.28s ease; }
 
 .filter-scroll { padding: 10px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .filter-scroll::-webkit-scrollbar { display: none; }
@@ -290,8 +292,8 @@ const CSS = `
 .init-loc { font-size: 11px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .init-badge { display: inline-flex; align-items: center; font-size: 10px; padding: 2px 7px; border-radius: 5px; margin-top: 5px; font-weight: 500; }
 
-.off-map-area { position: relative; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-#off-map { flex: 1; min-height: 0; display: block; }
+.off-map-area { position: relative; display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
+#off-map { flex: 1; min-height: 0; min-width: 0; display: block; }
 
 .reset-btn { position: absolute; top: 12px; left: 12px; z-index: 900; background: white; border: 1px solid var(--border); border-radius: 8px; padding: 7px 13px; font-size: 12px; font-family: inherit; font-weight: 500; color: var(--ink); cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: background 0.12s; }
 .reset-btn:hover { background: var(--surface); }
@@ -324,13 +326,68 @@ const CSS = `
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── FAB (mobile only) ── */
+.list-fab {
+  display: none;
+  position: absolute; bottom: 20px; right: 16px; z-index: 920;
+  background: var(--green); color: white; border: none; border-radius: 50px;
+  padding: 12px 20px; font-size: 13px; font-weight: 700; font-family: inherit;
+  cursor: pointer; box-shadow: 0 4px 18px rgba(22,163,74,0.45);
+  align-items: center; gap: 6px; -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Mobile (≤ 640px) ── */
+@media (max-width: 640px) {
+  .off-header { height: 48px; padding: 0 14px; }
+  .off-header-right { display: none; }
+
+  /* App becomes a column: map on top, sidebar below when open */
+  .off-app { flex-direction: column; }
+
+  /* Sidebar: hidden off-screen by default, slides up when open */
+  .off-sidebar {
+    width: 100%; flex-shrink: 0;
+    height: 65vh; max-height: 65vh;
+    border-right: none; border-top: 1px solid var(--border);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -6px 24px rgba(0,0,0,0.12);
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 850;
+    transform: translateY(100%);
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+  }
+  .off-sidebar.open { transform: translateY(0); }
+
+  /* Map fills the full remaining screen */
+  .off-map-area { flex: 1; height: 100%; }
+
+  /* FAB visible on mobile */
+  .list-fab { display: flex; }
+
+  /* Hide legend — too cluttered on small screens */
+  .map-legend { display: none; }
+
+  /* Move reset button above FAB */
+  .reset-btn { bottom: 76px; top: auto; }
+
+  /* Detail panel shorter on mobile */
+  .detail-panel { max-height: 50vh; }
+}
+
+/* ── Backdrop when list is open on mobile ── */
+.list-backdrop {
+  display: none;
+  position: fixed; inset: 0; z-index: 840;
+  background: rgba(0,0,0,0.35);
+}
+.list-backdrop.open { display: block; }
 `;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function OfficialMapPage() {
   const initialized = useRef(false);
+  const [listOpen, setListOpen] = useState(false);
 
-  // Functions stored in refs so JSX onClick can call them after init
   const fns = useRef({
     resetView:   () => {},
     closeDetail: () => {},
@@ -346,15 +403,7 @@ export default function OfficialMapPage() {
     };
     addLink("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
     addLink("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
-
-    // Load Leaflet manually — next/script "afterInteractive" never fires in Capacitor static export
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((window as any).L) { initMap(); return; }
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    script.onload = initMap;
-    document.head.appendChild(script);
-  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const initMap = () => {
     if (initialized.current) return;
@@ -524,12 +573,22 @@ export default function OfficialMapPage() {
   return (
     <>
       <style>{CSS}</style>
+      <Script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        strategy="afterInteractive"
+        onReady={initMap}
+      />
 
       <div className="official-shell">
 
         {/* Header */}
         <header className="off-header">
           <div className="off-header-left">
+            <Link href="/" style={{ display:"flex", alignItems:"center", marginRight:10, color:"var(--muted)", textDecoration:"none" }} aria-label="Home">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M19 12H5M12 5l-7 7 7 7" />
+              </svg>
+            </Link>
             <div className="off-header-logo">U</div>
             <span className="off-header-title">Sustainability Map</span>
           </div>
@@ -538,8 +597,14 @@ export default function OfficialMapPage() {
 
         <div className="off-app">
 
+          {/* Mobile backdrop */}
+          <div
+            className={`list-backdrop${listOpen ? " open" : ""}`}
+            onClick={() => setListOpen(false)}
+          />
+
           {/* Sidebar */}
-          <aside className="off-sidebar">
+          <aside className={`off-sidebar${listOpen ? " open" : ""}`}>
 
             <div className="filter-scroll">
               <div className="filters" id="off-filter-container"></div>
@@ -559,6 +624,14 @@ export default function OfficialMapPage() {
 
             <button className="reset-btn" onClick={() => fns.current.resetView()}>
               Full campus
+            </button>
+
+            {/* FAB — mobile only, shows/hides the initiative list */}
+            <button className="list-fab" onClick={() => setListOpen(v => !v)}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              {listOpen ? "Close" : "List"}
             </button>
 
             <div className="map-legend">

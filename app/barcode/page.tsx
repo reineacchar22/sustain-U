@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 // ─── BarcodeDetector web API type ─────────────────────────────────────────────
@@ -559,10 +560,14 @@ export default function BarcodeScannerPage() {
 
         {/* Header */}
         <header className="scan-header">
-          {(screen==="result"||screen==="logged"||screen==="error") && (
+          {(screen==="result"||screen==="logged"||screen==="error") ? (
             <button className="header-icon-btn" onClick={reset} aria-label="Back">
               <Ico name="back" size={16} />
             </button>
+          ) : (
+            <Link href="/" className="header-icon-btn" style={{ textDecoration:"none" }} aria-label="Home">
+              <Ico name="home" size={16} />
+            </Link>
           )}
           <span className="scan-header-title">
             {screen==="result" ? "Scan result" : screen==="logged" ? "Logged" : screen==="history" ? "Scan history" : "Carbon scanner"}

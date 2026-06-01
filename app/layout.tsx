@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Suspense } from "react";
 import "./globals.css";
 
 import PWARegister from "./components/PWARegister";
@@ -40,9 +39,7 @@ export default function RootLayout({
       </head>
       <body style={{ margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
         <PWARegister />
-        <Suspense fallback={null}>
-          <HamburgerMenu />
-        </Suspense>
+        <HamburgerMenu />
         {children}
       </body>
     </html>

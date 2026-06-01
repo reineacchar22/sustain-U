@@ -63,13 +63,13 @@ export default function AnxietyCheckin() {
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-gray-100">
         <div className="max-w-2xl mx-auto px-6 h-14 flex items-center">
           <Link
-            href="/mental-health"
+            href="/wellness"
             className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors no-underline"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Mental Health
+            Wellness
           </Link>
         </div>
       </div>
