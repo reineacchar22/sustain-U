@@ -2,6 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { mentalHealthTiles } from "../resources";
 
+export function generateStaticParams() {
+  return mentalHealthTiles.map((t) => ({ slug: t.slug }));
+}
+
 export default async function MentalHealthDetailPage({
   params,
 }: {

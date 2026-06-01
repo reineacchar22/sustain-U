@@ -1,16 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import "./globals.css";
-
-import { DM_Sans } from "next/font/google";
 
 import PWARegister from "./components/PWARegister";
 import HamburgerMenu from "./components/HamburgerMenu";
-
-const calmFont = DM_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "UAlberta Map",
@@ -30,9 +23,26 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={calmFont.className} style={{ margin: 0 }}>
+      <head>
+        <link
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+        />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body style={{ margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
         <PWARegister />
-        <HamburgerMenu />
+        <Suspense fallback={null}>
+          <HamburgerMenu />
+        </Suspense>
         {children}
       </body>
     </html>

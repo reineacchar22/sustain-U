@@ -1,6 +1,5 @@
 "use client";
 
-import Script from "next/script";
 import { useEffect, useRef } from "react";
 
 // ─── Category config ──────────────────────────────────────────────────────────
@@ -347,7 +346,15 @@ export default function OfficialMapPage() {
     };
     addLink("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
     addLink("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
-  }, []);
+
+    // Load Leaflet manually — next/script "afterInteractive" never fires in Capacitor static export
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((window as any).L) { initMap(); return; }
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    script.onload = initMap;
+    document.head.appendChild(script);
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const initMap = () => {
     if (initialized.current) return;
@@ -517,11 +524,6 @@ export default function OfficialMapPage() {
   return (
     <>
       <style>{CSS}</style>
-      <Script
-        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        strategy="afterInteractive"
-        onReady={initMap}
-      />
 
       <div className="official-shell">
 
