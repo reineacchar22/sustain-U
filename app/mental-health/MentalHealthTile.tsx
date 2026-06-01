@@ -5,41 +5,34 @@ type Props = {
   icon: string;
   title: string;
   description?: string;
-  tagline?: string; // ✅ allow tagline
+  tagline?: string;
 };
 
-export default function MentalHealthTile({
-  slug,
-  icon,
-  title,
-  description,
-  tagline,
-}: Props) {
+export default function MentalHealthTile({ slug, icon, title, description, tagline }: Props) {
   return (
     <Link
       href={`/mental-health/${slug}`}
-      style={{
-        textDecoration: "none",
-        color: "#111",
-        border: "1px solid rgba(0,0,0,0.10)",
-        borderRadius: 18,
-        padding: 14,
-        background: "rgba(255,255,255,0.92)",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
-        display: "grid",
-        gap: 8,
-      }}
+      className="group flex flex-col gap-3 p-5 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all no-underline"
     >
-      <div style={{ fontSize: 28 }}>{icon}</div>
-      <div style={{ fontWeight: 900, fontSize: 16 }}>{title}</div>
-
-      {/* Prefer description if provided; fall back to tagline */}
-      <div style={{ opacity: 0.75, fontSize: 13, lineHeight: 1.35 }}>
-        {description ?? tagline ?? ""}
+      <span className="text-3xl leading-none">{icon}</span>
+      <div className="flex-1">
+        <div className="text-[15px] font-bold text-gray-900 leading-snug">{title}</div>
+        {(description ?? tagline) && (
+          <div className="mt-1.5 text-[13px] text-gray-500 leading-relaxed line-clamp-2">
+            {description ?? tagline}
+          </div>
+        )}
       </div>
-
-      <div style={{ marginTop: 4, opacity: 0.55, fontWeight: 800 }}>
-        Open →
+      <div className="flex items-center gap-1 text-[13px] font-semibold text-emerald-600 group-hover:gap-1.5 transition-all">
+        Explore
+        <svg
+          className="w-3.5 h-3.5 translate-x-0 group-hover:translate-x-0.5 transition-transform"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+        </svg>
       </div>
     </Link>
   );

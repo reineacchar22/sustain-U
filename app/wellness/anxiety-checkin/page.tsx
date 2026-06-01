@@ -1,24 +1,31 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 const COPING = [
-  { label: "2-minute breathing", text: "Breathe in 4, hold 2, out 6. Repeat 6 times." },
-  { label: "Name + normalize", text: "“This is eco-anxiety. It’s a normal response to a real issue.”" },
-  { label: "Tiny action", text: "Pick one small action in the next 24h (refill bottle, transit once, share a resource)." },
-  { label: "Connection", text: "Text a friend: “Want to take a short walk and talk?”" },
-  { label: "Boundaries", text: "Limit doomscrolling: set a 10-minute timer → stop when time’s up." }
+  { label: "2-min breathing", icon: "💨", slug: "breathing",   text: "Breathe in 4 counts, hold 2, out 6. Repeat 6 times." },
+  { label: "Name it",         icon: "🧠", slug: "name-it",     text: "Say: This is eco-anxiety. It is a normal response to a real issue." },
+  { label: "Tiny action",     icon: "✅", slug: "tiny-action", text: "Pick one small action in the next 24 h: refill a bottle, take transit, or share a resource." },
+  { label: "Connection",      icon: "🤝", slug: "connection",  text: "Text a friend: Want to take a short walk and talk?" },
+  { label: "Boundaries",      icon: "🛡️", slug: "boundaries", text: "Set a 10-minute timer for news or social media and stop when it goes off." },
 ];
+
+const intensityColor = (r: number) =>
+  r <= 3 ? "#16a34a" : r <= 6 ? "#d97706" : "#dc2626";
+
+const intensityLabel = (r: number) =>
+  r <= 2 ? "Low" : r <= 4 ? "Mild" : r <= 6 ? "Moderate" : r <= 8 ? "High" : "Intense";
 
 export default function AnxietyCheckin() {
   const storageKey = "uofa_wellness_anxiety_checkin_v1";
 
-  const [rating, setRating] = useState(4);
-  const [trigger, setTrigger] = useState("");
-  const [body, setBody] = useState("");
-  const [thought, setThought] = useState("");
-  const [nextStep, setNextStep] = useState(COPING[0].label);
-  const [saved, setSaved] = useState(false);
+  const [rating,   setRating]   = useState(4);
+  const [trigger,  setTrigger]  = useState("");
+  const [body,     setBody]     = useState("");
+  const [thought,  setThought]  = useState("");
+  const [selected, setSelected] = useState(COPING[0].label);
+  const [saved,    setSaved]    = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem(storageKey);
@@ -29,121 +36,189 @@ export default function AnxietyCheckin() {
       setTrigger(s.trigger ?? "");
       setBody(s.body ?? "");
       setThought(s.thought ?? "");
-      setNextStep(s.nextStep ?? COPING[0].label);
+      setSelected(s.nextStep ?? COPING[0].label);
     } catch {}
   }, []);
 
-  const tip = useMemo(() => COPING.find((c) => c.label === nextStep)?.text ?? "", [nextStep]);
+  const coping = useMemo(
+    () => COPING.find((c) => c.label === selected) ?? COPING[0],
+    [selected]
+  );
 
   const save = () => {
     localStorage.setItem(
       storageKey,
-      JSON.stringify({ rating, trigger, body, thought, nextStep, savedAt: Date.now() })
+      JSON.stringify({ rating, trigger, body, thought, nextStep: selected, savedAt: Date.now() })
     );
     setSaved(true);
-    setTimeout(() => setSaved(false), 1200);
+    setTimeout(() => setSaved(false), 1800);
   };
 
+  const color = intensityColor(rating);
+
   return (
-    <div style={page()}>
-      <h1 style={h1()}>🧠 Eco-anxiety check-in</h1>
-      <p style={sub()}>
-        A quick self-check to help you regulate and choose one gentle next step.
-      </p>
+    <div className="min-h-screen bg-[#f7f8fa]">
 
-      <div style={card()}>
-        <label style={label()}>
-          How intense is it right now? <b>{rating}/10</b>
-          <input type="range" min={0} max={10} value={rating} onChange={(e) => setRating(Number(e.target.value))} />
-        </label>
+      {/* Sticky nav */}
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-gray-100">
+        <div className="max-w-2xl mx-auto px-6 h-14 flex items-center">
+          <Link
+            href="/mental-health"
+            className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors no-underline"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Mental Health
+          </Link>
+        </div>
+      </div>
 
-        <label style={label()}>
-          What triggered it? (optional)
-          <input style={input()} value={trigger} onChange={(e) => setTrigger(e.target.value)} placeholder="e.g., news, class topic, social media" />
-        </label>
+      {/* Hero */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-2xl mx-auto px-6 py-10">
+          <div className="text-5xl mb-5 leading-none">🧠</div>
+          <h1 className="text-[1.75rem] font-bold text-gray-900 leading-tight">
+            Eco-anxiety check-in
+          </h1>
+          <p className="mt-3 text-[15px] text-gray-500 leading-relaxed max-w-lg">
+            A quick self-check to help you regulate and choose one gentle next step.
+          </p>
+        </div>
+      </div>
 
-        <label style={label()}>
-          Where do you feel it in your body? (optional)
-          <input style={input()} value={body} onChange={(e) => setBody(e.target.value)} placeholder="e.g., tight chest, restless, headache" />
-        </label>
+      {/* Form */}
+      <div className="max-w-2xl mx-auto px-6 py-8 space-y-4">
 
-        <label style={label()}>
-          What’s the loudest thought? (optional)
-          <input style={input()} value={thought} onChange={(e) => setThought(e.target.value)} placeholder="e.g., “Nothing I do matters”" />
-        </label>
-
-        <label style={label()}>
-          Pick a next step
-          <select style={input()} value={nextStep} onChange={(e) => setNextStep(e.target.value)}>
-            {COPING.map((c) => (
-              <option key={c.label} value={c.label}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div style={tipBox()}>
-          <div style={{ fontWeight: 900, marginBottom: 6 }}>Suggested script</div>
-          <div style={{ lineHeight: 1.4 }}>{tip}</div>
+        {/* Intensity */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+              Intensity right now
+            </p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[13px] font-semibold mr-1" style={{ color }}>
+                {intensityLabel(rating)}
+              </span>
+              <span className="text-[32px] font-bold tabular-nums leading-none" style={{ color }}>
+                {rating}
+              </span>
+              <span className="text-[14px] text-gray-400 font-medium">/10</span>
+            </div>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={10}
+            value={rating}
+            onChange={(e) => setRating(Number(e.target.value))}
+            className="w-full h-2 rounded-full appearance-none cursor-pointer outline-none"
+            style={{
+              background: `linear-gradient(to right, ${color} ${rating * 10}%, #e5e7eb ${rating * 10}%)`,
+              accentColor: color,
+            }}
+          />
+          <div className="flex justify-between mt-2.5 text-[11px] text-gray-400 font-medium">
+            <span>None</span>
+            <span>Moderate</span>
+            <span>Intense</span>
+          </div>
         </div>
 
-        <button onClick={save} style={btn()}>
-          {saved ? "✅ Saved" : "💾 Save check-in"}
+        {/* Reflection */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+            Reflection{" "}
+            <span className="normal-case font-medium text-gray-400">(optional)</span>
+          </p>
+          {[
+            { label: "What triggered it?", value: trigger, set: setTrigger, placeholder: "e.g. news article, class topic, social media" },
+            { label: "Where do you feel it in your body?", value: body, set: setBody, placeholder: "e.g. tight chest, restless, headache" },
+            { label: "What is the loudest thought?", value: thought, set: setThought, placeholder: "e.g. Nothing I do matters" },
+          ].map((f) => (
+            <div key={f.label}>
+              <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">
+                {f.label}
+              </label>
+              <input
+                type="text"
+                value={f.value}
+                onChange={(e) => f.set(e.target.value)}
+                placeholder={f.placeholder}
+                className="w-full px-3.5 py-2.5 text-[14px] text-gray-800 bg-gray-50 border border-gray-200 rounded-xl outline-none placeholder:text-gray-400 transition-all focus:border-emerald-300 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Coping strategy */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            Pick a next step
+          </p>
+
+          <div className="space-y-2">
+            {COPING.map((c) => (
+              <button
+                key={c.label}
+                onClick={() => setSelected(c.label)}
+                className={[
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all",
+                  selected === c.label
+                    ? "border-emerald-300 bg-emerald-50"
+                    : "border-gray-100 bg-gray-50 hover:border-gray-200 hover:bg-white",
+                ].join(" ")}
+              >
+                <span className="text-xl flex-shrink-0">{c.icon}</span>
+                <span
+                  className={[
+                    "text-[14px] font-semibold flex-1",
+                    selected === c.label ? "text-emerald-800" : "text-gray-700",
+                  ].join(" ")}
+                >
+                  {c.label}
+                </span>
+                {selected === c.label && (
+                  <svg className="w-4 h-4 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Suggested script */}
+          <div className="mt-4 p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+            <p className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider mb-2">
+              Suggested script
+            </p>
+            <p className="text-[14px] text-emerald-900 leading-relaxed">{coping.text}</p>
+            <Link
+              href={`/wellness/anxiety-checkin/${coping.slug}`}
+              className="inline-flex items-center gap-1.5 mt-3 text-[13px] font-bold text-emerald-700 hover:text-emerald-600 transition-colors no-underline"
+            >
+              Start full exercise
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+
+        {/* Save */}
+        <button
+          onClick={save}
+          className="w-full py-4 rounded-2xl font-bold text-[15px] tracking-tight transition-all active:scale-[0.99] shadow-sm"
+          style={{ background: saved ? "#16a34a" : "#1a5c42", color: "white" }}
+        >
+          {saved ? "Saved" : "Save check-in"}
         </button>
 
-        <div style={{ fontSize: 12, opacity: 0.7, marginTop: 10 }}>
-          If you feel unsafe or overwhelmed, consider reaching out to campus supports or someone you trust.
-        </div>
+        <p className="text-center text-[12px] text-gray-400 leading-relaxed pb-6">
+          If you feel unsafe or overwhelmed, please reach out to campus supports or someone you trust.
+        </p>
+
       </div>
     </div>
   );
-}
-
-function page(): React.CSSProperties {
-  return {
-    minHeight: "100vh",
-    padding: 18,
-    fontFamily: "system-ui",
-    background:
-      "radial-gradient(900px 500px at 20% 0%, rgba(21,71,52,0.14), transparent 55%), linear-gradient(180deg, rgba(245,247,246,1), rgba(235,240,238,1))"
-  };
-}
-function h1(): React.CSSProperties {
-  return { fontSize: 26, fontWeight: 1000, maxWidth: 900, margin: "0 auto" };
-}
-function sub(): React.CSSProperties {
-  return { opacity: 0.75, marginTop: 6, maxWidth: 900, marginLeft: "auto", marginRight: "auto" };
-}
-function card(): React.CSSProperties {
-  return {
-    maxWidth: 900,
-    margin: "16px auto 0",
-    padding: 16,
-    borderRadius: 18,
-    border: "1px solid rgba(0,0,0,0.10)",
-    background: "rgba(255,255,255,0.92)",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-    display: "grid",
-    gap: 12
-  };
-}
-function label(): React.CSSProperties {
-  return { display: "grid", gap: 6, fontWeight: 900, opacity: 0.9 };
-}
-function input(): React.CSSProperties {
-  return { padding: "10px 12px", borderRadius: 14, border: "1px solid rgba(0,0,0,0.14)", background: "white" };
-}
-function tipBox(): React.CSSProperties {
-  return { padding: 12, borderRadius: 14, background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)" };
-}
-function btn(): React.CSSProperties {
-  return {
-    padding: "12px 14px",
-    borderRadius: 16,
-    border: "1px solid rgba(21,71,52,0.22)",
-    background: "rgba(21,71,52,0.14)",
-    cursor: "pointer",
-    fontWeight: 1000
-  };
 }

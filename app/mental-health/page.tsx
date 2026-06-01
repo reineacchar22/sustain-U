@@ -3,17 +3,21 @@ import { mentalHealthTiles } from "./resources";
 
 export default function MentalHealthPage() {
   return (
-    <main className="min-h-screen p-6 bg-gradient-to-b from-emerald-50 via-white to-amber-50">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-semibold">You’re Not Alone</h1>
+    <div className="min-h-screen bg-[#f7f8fa]">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-2xl mx-auto px-6 py-10">
+          <h1 className="text-[1.75rem] font-bold text-gray-900">You&apos;re Not Alone</h1>
+          <p className="mt-2 text-[15px] text-gray-500 leading-relaxed max-w-lg">
+            Climate-related emotions are real and valid. Explore gentle ways to understand what
+            you&apos;re feeling, process it, connect with others, and find hope.
+          </p>
+        </div>
+      </div>
 
-        <p className="text-gray-600 mt-2 max-w-2xl">
-          Climate-related emotions are real and valid. Explore gentle ways to
-          understand what you’re feeling, process it, connect with others, and
-          find hope.
-        </p>
-
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+      {/* Tiles */}
+      <div className="max-w-2xl mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {mentalHealthTiles.map((tile) => (
             <MentalHealthTile
               key={tile.slug}
@@ -23,8 +27,8 @@ export default function MentalHealthPage() {
               description={tile.description}
             />
           ))}
-        </section>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

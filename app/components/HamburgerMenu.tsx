@@ -11,6 +11,7 @@ type MenuItem =
 const MENU: MenuItem[] = [
   { type: "route", label: "Official Campus Map", href: "/official", emoji: "🗺️" },
   { type: "route", label: "CO₂ Self-Tracker", href: "/co2", emoji: "🌍" },
+  { type: "route", label: "Carbon Scanner", href: "/barcode", emoji: "📷" },
   { type: "route", label: "Mental Health Support", href: "/mental-health", emoji: "🧠" },
   { type: "route", label: "Climate Wellness", href: "/wellness", emoji: "🌿" },
 
