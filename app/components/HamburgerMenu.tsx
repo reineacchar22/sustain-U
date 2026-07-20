@@ -165,8 +165,30 @@ export default function HamburgerMenu() {
         </nav>
 
         {/* Footer */}
-        <div style={{ marginTop: "auto", padding: 14, fontSize: 12, opacity: 0.7 }}>
-          Tip: press <b>Esc</b> to close
+        <div
+          style={{
+            marginTop: "auto",
+            padding: 14,
+            borderTop: "1px solid rgba(0,0,0,0.08)",
+          }}
+        >
+          <div style={{ display: "flex", gap: 14, marginBottom: 10 }}>
+            <Link
+              href="/support"
+              style={{ fontSize: 12, fontWeight: 600, color: "#374151", textDecoration: "none" }}
+            >
+              Support
+            </Link>
+            <Link
+              href="/privacy"
+              style={{ fontSize: 12, fontWeight: 600, color: "#374151", textDecoration: "none" }}
+            >
+              Privacy Policy
+            </Link>
+          </div>
+          <div style={{ fontSize: 12, opacity: 0.7 }}>
+            Tip: press <b>Esc</b> to close
+          </div>
         </div>
       </aside>
     </>
