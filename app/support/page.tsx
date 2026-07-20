@@ -5,7 +5,7 @@ export const metadata = {
   description: "Get help with Sustain-U, troubleshooting steps, and support contact information.",
 };
 
-const SUPPORT_EMAIL = "akchr@ualberta.ca";
+const SUPPORT_EMAIL = "ecoclubsualberta@gmail.com";
 const APP_VERSION = "1.0";
 
 const TROUBLESHOOTING = [

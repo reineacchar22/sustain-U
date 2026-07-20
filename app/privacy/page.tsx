@@ -5,7 +5,7 @@ export const metadata = {
   description: "How Sustain-U collects, stores, and uses information.",
 };
 
-const CONTACT_EMAIL = "akchr@ualberta.ca";
+const CONTACT_EMAIL = "ecoclubsualberta@gmail.com";
 const EFFECTIVE_DATE = "July 20, 2026";
 
 type Section = { title: string; body: React.ReactNode };
