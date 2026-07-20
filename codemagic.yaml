@@ -1,0 +1,99 @@
+workflows:
+  ios-capacitor-release:
+    name: iOS Capacitor Release (Sustain-U)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      # Name of the App Store Connect integration configured in
+      # Codemagic Team settings > Integrations > App Store Connect.
+      app_store_connect: sustain-u-asc
+
+    environment:
+      groups:
+        # Create this group in Codemagic (Team settings > Environment variables)
+        # and store the actual values there. Nothing in this file is a real
+        # secret -- these are placeholder variable names only.
+        - ios_signing
+      vars:
+        # Bundle identifier must match capacitor.config.ts / Xcode project.
+        BUNDLE_ID: "com.ecoclubsualberta.sustainu"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        # Numeric App Store Connect app ID -- set the real value inside the
+        # ios_signing environment variable group in the Codemagic UI.
+        APP_STORE_APPLE_ID: $APP_STORE_APPLE_ID
+      node: 22
+      xcode: latest
+      cocoapods: default
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+        - pattern: ios-capacitor-setup
+          include: true
+
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm ci
+
+      - name: Build Next.js static export
+        script: |
+          npm run build
+          # Sanity check that the static export exists before Capacitor sync.
+          test -d out || (echo "Next.js 'out' directory was not generated" && exit 1)
+
+      - name: Sync Capacitor iOS project
+        script: |
+          npx cap sync ios
+
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios/App
+          pod install --repo-update
+
+      - name: Set up code signing (automatic)
+        script: |
+          # Uses the App Store Connect API key configured via the
+          # app_store_connect integration above. Codemagic fetches/creates
+          # the matching certificates and provisioning profiles at build
+          # time -- no signing secrets are stored in this repo.
+          xcode-project use-profiles
+
+      - name: Set build number
+        script: |
+          cd ios/App
+          agvtool new-version -all $PROJECT_BUILD_NUMBER
+
+      - name: Build .ipa for distribution
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - ios/App/App.xcworkspace
+
+    publishing:
+      # No secrets here -- Codemagic pulls credentials from the
+      # app_store_connect integration and the ios_signing variable group.
+      email:
+        recipients:
+          - ecoclubsualberta@gmail.com
+        notify:
+          success: true
+          failure: true
+
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        # Set to true once you're ready to submit builds for App Review too.
+        submit_to_app_store: false
+        # Optional: notify specific internal/external testing groups.
+        # beta_groups:
+        #   - "Internal Testers"
