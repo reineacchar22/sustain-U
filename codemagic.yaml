@@ -17,14 +17,16 @@ workflows:
       vars:
         # Bundle identifier must match capacitor.config.ts / Xcode project.
         BUNDLE_ID: "com.ecoclubsualberta.sustainu"
-        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        # This project uses Capacitor's Swift Package Manager integration
+        # (see ios/App/CapApp-SPM), not CocoaPods, so there is no
+        # App.xcworkspace / Podfile -- build against the .xcodeproj directly.
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
         # Numeric App Store Connect app ID -- set the real value inside the
         # ios_signing environment variable group in the Codemagic UI.
         APP_STORE_APPLE_ID: $APP_STORE_APPLE_ID
       node: 22
       xcode: latest
-      cocoapods: default
 
     triggering:
       events:
@@ -39,22 +41,14 @@ workflows:
       - name: Install npm dependencies
         script: |
           npm ci
-
       - name: Build Next.js static export
         script: |
           npm run build
           # Sanity check that the static export exists before Capacitor sync.
           test -d out || (echo "Next.js 'out' directory was not generated" && exit 1)
-
       - name: Sync Capacitor iOS project
         script: |
           npx cap sync ios
-
-      - name: Install CocoaPods dependencies
-        script: |
-          cd ios/App
-          pod install --repo-update
-
       - name: Set up code signing (automatic)
         script: |
           # Uses the App Store Connect API key configured via the
@@ -62,22 +56,19 @@ workflows:
           # the matching certificates and provisioning profiles at build
           # time -- no signing secrets are stored in this repo.
           xcode-project use-profiles
-
       - name: Set build number
         script: |
           cd ios/App
           agvtool new-version -all $PROJECT_BUILD_NUMBER
-
       - name: Build .ipa for distribution
         script: |
           xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
+            --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
 
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
-      - ios/App/App.xcworkspace
 
     publishing:
       # No secrets here -- Codemagic pulls credentials from the
@@ -88,7 +79,6 @@ workflows:
         notify:
           success: true
           failure: true
-
       app_store_connect:
         auth: integration
         submit_to_testflight: true
