@@ -21,7 +21,7 @@ export default function CampusMap() {
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
     map.on("load", async () => {
-      const res = await fetch("/data/study_spaces.geojson");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/data/study_spaces.geojson`);
       const studySpaces = await res.json();
 
       map.addSource("studySpaces", { type: "geojson", data: studySpaces });

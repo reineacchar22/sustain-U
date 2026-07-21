@@ -20,7 +20,7 @@ export default function PWARegister() {
     if (process.env.NODE_ENV !== "production") return;
     (async () => {
       try {
-        await navigator.serviceWorker.register("/sw.js");
+        await navigator.serviceWorker.register(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/sw.js`);
       } catch (err) {
         console.error("Service worker registration failed:", err);
       }
