@@ -38,13 +38,6 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Sustain-U uses the camera to scan product barcodes so it can estimate the carbon footprint of grocery items.</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
