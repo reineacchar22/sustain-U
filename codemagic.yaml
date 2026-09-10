@@ -70,6 +70,18 @@ workflows:
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
+      - name: Verify iPhone-only device family in built archive
+        script: |
+          ARCHIVE=$(find build/ios/xcarchive -maxdepth 1 -name "*.xcarchive" | head -1)
+          test -n "$ARCHIVE" || (echo "No .xcarchive found under build/ios/xcarchive" && exit 1)
+          APP_PLIST=$(find "$ARCHIVE/Products/Applications" -maxdepth 2 -name "Info.plist" | head -1)
+          test -n "$APP_PLIST" || (echo "No app Info.plist found inside archive" && exit 1)
+          DEVICE_FAMILY=$(/usr/libexec/PlistBuddy -c "Print :UIDeviceFamily" "$APP_PLIST")
+          echo "Built archive UIDeviceFamily: $DEVICE_FAMILY"
+          if echo "$DEVICE_FAMILY" | grep -q "2"; then
+            echo "FAIL: archive still declares iPad (UIDeviceFamily includes 2) -- refusing to publish."
+            exit 1
+          fi
 
     artifacts:
       - build/ios/ipa/*.ipa
